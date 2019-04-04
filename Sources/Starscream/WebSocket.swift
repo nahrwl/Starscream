@@ -1039,11 +1039,21 @@ open class WebSocket : NSObject, StreamDelegate, WebSocketClient, WSStreamDelega
             }
             var dataLength = UInt64(payloadLen)
             if dataLength == 127 {
+                let nextOffset = offset + MemoryLayout<UInt64>.size
+                guard bufferLen >= nextOffset else {
+                    fragBuffer = Data(bytes: baseAddress, count: bufferLen)
+                    return emptyBuffer
+                }
                 dataLength = WebSocket.readUint64(baseAddress, offset: offset)
-                offset += MemoryLayout<UInt64>.size
+                offset = nextOffset
             } else if dataLength == 126 {
+                let nextOffset = offset + MemoryLayout<UInt16>.size
+                guard bufferLen >= nextOffset  else {
+                    fragBuffer = Data(bytes: baseAddress, count: bufferLen)
+                    return emptyBuffer
+                }
                 dataLength = UInt64(WebSocket.readUint16(baseAddress, offset: offset))
-                offset += MemoryLayout<UInt16>.size
+                offset = nextOffset
             }
             if bufferLen < offset || UInt64(bufferLen - offset) < dataLength {
                 fragBuffer = Data(bytes: baseAddress, count: bufferLen)
